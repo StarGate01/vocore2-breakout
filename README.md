@@ -2,10 +2,12 @@
 
 KiCad breakout board for the VoCore2 module (MT7628AN SoC).
 
-## J6 - JTAG Connector (J-Link EDU Mini)
+![PCB 3D render](images/pcb-3drender.png)
+![Serial and JTAG](images/serial_jtag.jpg)
 
-J6 is a 2×5 1.27 mm pitch header wired to the standard 9-pin ARM Cortex debug
-connector used by the J-Link EDU Mini.
+## JTAG Connector (J-Link EDU Mini)
+
+J6 is a 2×5 1.27 mm pitch header wired to the standard 9-pin ARM Cortex debug connector used by the J-Link EDU Mini.
 
 | Pin | Signal | Notes |
 |-----|--------|-------|
@@ -40,9 +42,9 @@ All five JTAG signals (`TMS`, `TCK`, `TDI`, `TDO`, `TRST`) need pull-ups to 3V3.
 
 ### OpenOCD configuration
 
-Add `reset_config trst_and_srst` to the configuration so OpenOCD knows both hardware reset lines are present. Without this it auto-probes, which is version-dependent.
+If needed, add `reset_config trst_and_srst` to the configuration so OpenOCD knows both hardware reset lines are present. Without this it auto-probes, which is version-dependent. The default mode usually worths fine though.
 
-## JP1 - TXD1 JTAG mode selector
+## TXD1 JTAG mode selector
 
 MT7628 `GPIO13` / `TXD1` (VoCore2 pad `PR01`) is sampled at power-on reset to determine whether the `EPHY_LED` pins (`GPIO39`–`GPIO43`) operate as Ethernet LEDs or as the JTAG interface.
 
@@ -55,8 +57,8 @@ MT7628 `GPIO13` / `TXD1` (VoCore2 pad `PR01`) is sampled at power-on reset to de
 
 | `JP1` position | `TXD1` | JTAG |
 |---------------|--------|------|
-| 1-2 (default) | HIGH via `R1` (4K7 to `+3V3`) | Disabled |
-| 2-3 | LOW via `R2` (4K7 to `GND`) | **Enabled** |
+| 1-2 ("GPIO", default) | HIGH via `R1` (4K7 to `+3V3`) | Disabled |
+| 2-3 ("JTAG") | LOW via `R2` (4K7 to `GND`) | **Enabled** |
 
 ### VoCore2 module modification required
 
@@ -68,6 +70,16 @@ The stock VoCore2 module has **`R9` populated** (pull-up, 4.7 kΩ to 3V3) which 
 The breakout `JP` then has sole control over `TXD1` with no internal resistor fighting it. Leaving `R9` on the module while setting `JP` to 2-3 creates a voltage divider (~1.65 V, undefined logic level).
 
 The original VoCore2 JTAG how-to describes moving `R9` to the `R6` footprint (a pull-down). With `R9` removed entirely and `JP` at 2-3, the effect is the same.
+
+## Fabrication
+
+Gerber files are in the `gerber/` directory and can be sent directly to a PCB manufacturer.
+
+Before assembly, it is recommended to bake the VoCore2 module at 120 °C for at least 12 hours to drive out moisture. However it works just as well without.
+
+The VoCore2 module must be reflowed using hot air, do not use a soldering iron. The DDR2 on the module is ESD-sensitive and iron leakage current can cause permanent damage. Reflow temperature must not exceed 260 °C for more than 10 seconds.
+
+The resistors can be reflowed together with the VoCore2 module or soldered normally with an iron. The through-hole pin headers are soldered normally. Take special care with the JTAG header (J6): it uses a 1.27 mm pitch fine-pitch header where adjacent pins are easy to bridge accidentally. Inspect with a loupe or microscope after soldering.
 
 ## References
 

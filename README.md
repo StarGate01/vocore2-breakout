@@ -42,7 +42,22 @@ All five JTAG signals (`TMS`, `TCK`, `TDI`, `TDO`, `TRST`) need pull-ups to 3V3.
 
 ### OpenOCD configuration
 
-If needed, add `reset_config trst_and_srst` to the configuration so OpenOCD knows both hardware reset lines are present. Without this it auto-probes, which is version-dependent. The default mode usually worths fine though.
+OpenOCD requires third-party target scripts for the MT7628 — the standard script directory does not include this SoC. Clone [mtk-openwrt/openocd-scripts](https://github.com/mtk-openwrt/openocd-scripts) and point `OPENOCD_SCRIPTS` at it. This provides `mt7628.cfg` along with the `cpu_pll_init` and `dram_init` TCL helpers needed to bring up the PLL and DDR2 after halting the CPU via JTAG.
+
+```sh
+openocd -f interface/jlink.cfg \
+        -c "transport select jtag" \
+        -c "adapter speed 100" \
+        -c "reset_config trst_and_srst separate srst_nogate connect_assert_srst" \
+        -f mt7628.cfg \
+        -c "init" \
+        -c "reset halt" \
+        -c "wait_halt 10000"
+```
+
+**`adapter speed 100`** — the MT7628 PLL is not running at reset; the JTAG clock source is the raw 40 MHz crystal. 100 kHz is conservative enough to be reliable in that window.
+
+**`reset_config trst_and_srst separate srst_nogate connect_assert_srst`** — `connect_assert_srst` holds SRST (PORST_N) asserted when OpenOCD first connects, keeping the system in reset while the JTAG TAP initializes. `srst_nogate` keeps TCK running during SRST so OpenOCD can set the `EJTAGBOOT` instruction before releasing SRST. When SRST releases, the CPU starts with EJTAGBOOT active, enters the EJTAG debug ROM, and halts before its first instruction.
 
 ## TXD1 JTAG mode selector
 

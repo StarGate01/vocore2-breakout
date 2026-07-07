@@ -34,7 +34,7 @@ The J-Link EDU Mini uses the **9-pin Cortex-M variant** of the connector, not th
 
 The vendor's JTAG how-to uses `WDT_RST_N` as "TRST" in their OpenOCD `sysfsgpio` config. This works because their setup is one VoCore2 bit-banging GPIOs to debug another - the host just needs two GPIO outputs to toggle, and driving `WDT_RST_N` low from an external GPIO triggers a full chip reset which also resets the JTAG TAP. OpenOCD's `sysfsgpio` driver doesn't care what hardware the signal is physically connected to; it just toggles the GPIO.
 
-A J-Link is different. It is a hardware probe that follows the ARM Cortex debug connector spec strictly: pin 9 (`nTRST`) is driven by J-Link silicon to reset **only the JTAG TAP**, and the probe asserts and de-asserts it independently during normal debug sessions. If pin 9 connects to `WDT_RST_N`, every `nTRST` assertion by the J-Link triggers a full watchdog system reset, killing the debug session. `WDT_RST_N` is also a chip *output* when the watchdog fires, so the J-Link driving it creates a bus conflict. `JTRST_N` (`GPIO39`) resets only the TAP and has no output driver conflict.
+The J-Link is a hardware probe that follows the ARM Cortex debug connector spec strictly: pin 9 (`nTRST`) is driven by J-Link silicon to reset *only the JTAG TAP*, and the probe asserts and de-asserts it independently during normal debug sessions. If pin 9 connects to `WDT_RST_N`, every `nTRST` assertion by the J-Link triggers a full watchdog system reset, killing the debug session. `WDT_RST_N` is also a chip *output* when the watchdog fires, so the J-Link driving it creates a bus conflict. `JTRST_N` (`GPIO39`) resets only the TAP and has no output driver conflict.
 
 ### Pull-up resistors
 
@@ -42,7 +42,7 @@ All five JTAG signals (`TMS`, `TCK`, `TDI`, `TDO`, `TRST`) need pull-ups to 3V3.
 
 ### OpenOCD configuration
 
-OpenOCD requires third-party target scripts for the MT7628 — the standard script directory does not include this SoC. Clone [mtk-openwrt/openocd-scripts](https://github.com/mtk-openwrt/openocd-scripts) and point `OPENOCD_SCRIPTS` at it. This provides `mt7628.cfg` along with the `cpu_pll_init` and `dram_init` TCL helpers needed to bring up the PLL and DDR2 after halting the CPU via JTAG.
+OpenOCD requires third-party target scripts for the MT7628 - the standard script directory does not include this SoC. Clone [mtk-openwrt/openocd-scripts](https://github.com/mtk-openwrt/openocd-scripts) and point `OPENOCD_SCRIPTS` at it. This provides `mt7628.cfg` along with the `cpu_pll_init` and `dram_init` TCL helpers needed to bring up the PLL and DDR2 after halting the CPU via JTAG.
 
 ```sh
 openocd -f interface/jlink.cfg \
@@ -55,9 +55,9 @@ openocd -f interface/jlink.cfg \
         -c "wait_halt 10000"
 ```
 
-**`adapter speed 100`** — the MT7628 PLL is not running at reset; the JTAG clock source is the raw 40 MHz crystal. 100 kHz is conservative enough to be reliable in that window.
+`adapter speed 100` - the MT7628 PLL is not running at reset; the JTAG clock source is the raw 40 MHz crystal. 100 kHz is conservative enough to be reliable in that window.
 
-**`reset_config trst_and_srst separate srst_nogate connect_assert_srst`** — `connect_assert_srst` holds SRST (PORST_N) asserted when OpenOCD first connects, keeping the system in reset while the JTAG TAP initializes. `srst_nogate` keeps TCK running during SRST so OpenOCD can set the `EJTAGBOOT` instruction before releasing SRST. When SRST releases, the CPU starts with EJTAGBOOT active, enters the EJTAG debug ROM, and halts before its first instruction.
+`reset_config trst_and_srst separate srst_nogate connect_assert_srst` - `connect_assert_srst` holds SRST (PORST_N) asserted when OpenOCD first connects, keeping the system in reset while the JTAG TAP initializes. `srst_nogate` keeps TCK running during SRST so OpenOCD can set the `EJTAGBOOT` instruction before releasing SRST. When SRST releases, the CPU starts with EJTAGBOOT active, enters the EJTAG debug ROM, and halts before its first instruction.
 
 ## TXD1 JTAG mode selector
 

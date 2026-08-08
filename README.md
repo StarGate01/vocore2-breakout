@@ -75,6 +75,8 @@ MT7628 `GPIO13` / `TXD1` (VoCore2 pad `PR01`) is sampled at power-on reset to de
 | 1-2 ("GPIO", default) | HIGH via `R1` (4K7 to `+3V3`) | Disabled |
 | 2-3 ("JTAG") | LOW via `R2` (4K7 to `GND`) | **Enabled** |
 
+Warning: JTAG mode breaks SD/eMMC on the EPHY pads.`TXD1` low (`DBG_JTAG_MODE=0`) does more than swap the `EPHY_LED` pins to JTAG, it puts the whole EPHY block into JTAG/debug state. If SD/eMMC is then muxed onto the EPHY pads ("IoT" mode, e.g. VoCore2's SD lines), the card stops responding. This is a hardware mutual-exclusion, not a software setting, JTAG and SD-on-EPHY cannot be used at the same time. Change the jumper after flashing to put the board into normal operation.
+
 ### VoCore2 module modification required
 
 The stock VoCore2 module has **`R9` populated** (pull-up, 4.7 kΩ to 3V3) which holds `TXD1` high and disables JTAG. To use JTAG:
